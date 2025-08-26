@@ -20,8 +20,6 @@ Create layouts by dragging text and image components onto a 12-column grid. Ever
 ## Quick start
 
 ```bash
-git clone <repo>
-cd nextjs-tailwind-project
 npm install
 npm run dev
 ```
