@@ -10,6 +10,8 @@ interface ImageComponentProps {
   onDelete: (id: string) => void; // Delete component by ID
   isEditing: boolean; // Flag to toggle between edit and preview mode
 }
+//Image Url regex
+const IMAGE_URL_REGEX = /^https?:\/\/[^\s]+$/i;
 
 export default function ImageComponent({
   component,
@@ -18,9 +20,9 @@ export default function ImageComponent({
   onDelete,
   isEditing,
 }: ImageComponentProps) {
-  const [isResizing, setIsResizing] = useState(false); // Tracks if resize is active
   const [altText, setAltText] = useState(component.alt || ""); // Local alt text state
   const [isMobile, setIsMobile] = useState(false); // Tracks mobile mode (preview only)
+  const [error, setError] = useState("");
 
   // Update component with new image URL
   const handleUrlChange = (url: string) => {
@@ -38,6 +40,18 @@ export default function ImageComponent({
       alt,
     });
   };
+  //Image Component Url Chnage
+  const handleChange = (value: string) => {
+    handleUrlChange(value); // always update the field
+
+    if (!IMAGE_URL_REGEX.test(value) && value.trim() !== "") {
+      setError(
+        "Please enter a valid image URL (e.g. https://placehold.co/600x400)"
+      );
+    } else {
+      setError(""); // clear error if valid
+    }
+  };
 
   // Handle resize (dragging left or right handles)
   const handleResizeStart = (
@@ -46,7 +60,6 @@ export default function ImageComponent({
   ) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsResizing(true);
 
     const startX = e.clientX; // Initial mouse X
     const startWidth = component.width; // Current width in grid columns
@@ -95,7 +108,6 @@ export default function ImageComponent({
 
     // When drag ends → commit final size
     const handleMouseUp = () => {
-      setIsResizing(false);
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
 
@@ -213,10 +225,15 @@ export default function ImageComponent({
               <input
                 type="url"
                 value={component.content}
-                onChange={(e) => handleUrlChange(e.target.value)}
-                className="w-full p-3 text-black border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                onChange={(e) => handleChange(e.target.value)}
+                className={`w-full p-3 text-black border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                  error
+                    ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                    : "border-slate-200 focus:ring-blue-500 focus:border-blue-500"
+                }`}
                 placeholder="https://placehold.co/600x400"
               />
+              {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
             </div>
           </div>
         ) : (
