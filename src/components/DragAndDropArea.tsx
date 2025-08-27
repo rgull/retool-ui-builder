@@ -6,13 +6,13 @@ import TextComponentRenderer from "./TextComponent";
 import ImageComponentRenderer from "./ImageComponent";
 
 interface DragAndDropAreaProps {
-  components: ComponentType[];
-  onUpdateComponent: (updatedComponent: ComponentType) => void;
-  onUpdateComponentResize: (updatedComponent: ComponentType) => void;
-  onDeleteComponent: (id: string) => void;
-  onAddComponent: (type: "text" | "image") => void;
-  onReorderComponents: (components: ComponentType[]) => void;
-  isEditing: boolean;
+  components: ComponentType[]; // List of components (text/image)
+  onUpdateComponent: (updatedComponent: ComponentType) => void; // Update after edit
+  onUpdateComponentResize: (updatedComponent: ComponentType) => void; // Live update during resize
+  onDeleteComponent: (id: string) => void; // Delete a component
+  onAddComponent: (type: "text" | "image") => void; // Add new component
+  onReorderComponents: (components: ComponentType[]) => void; // Reorder list after drag/drop
+  isEditing: boolean; // Flag for edit vs preview mode
 }
 
 interface GridPosition {
@@ -20,7 +20,7 @@ interface GridPosition {
   y: number;
 }
 
-const GRID_COLUMNS = 12;
+const GRID_COLUMNS = 12; // Fixed number of grid columns
 
 export default function DragAndDropArea({
   components,
@@ -31,17 +31,18 @@ export default function DragAndDropArea({
   onReorderComponents,
   isEditing,
 }: DragAndDropAreaProps) {
-  const [isDragOver, setIsDragOver] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false); // Tracks when an item is being dragged over
 
+  // Convert mouse drop position (x,y) → grid (column,row)
   const calculateGridPosition = useCallback(
     (dropX: number, dropY: number, containerWidth: number): GridPosition => {
-      const gridWidth = containerWidth / GRID_COLUMNS;
+      const gridWidth = containerWidth / GRID_COLUMNS; // Each column width
       const gridX = Math.max(
         0,
         Math.min(GRID_COLUMNS - 1, Math.floor(dropX / gridWidth))
       );
 
-      const rowHeight = 80;
+      const rowHeight = 80; // Fixed row height
       const gridY = Math.max(0, Math.floor(dropY / rowHeight));
 
       return { x: gridX, y: gridY };
@@ -49,6 +50,7 @@ export default function DragAndDropArea({
     []
   );
 
+  // Handle reordering components when one is dropped onto another position
   const handleComponentReorder = useCallback(
     (e: React.DragEvent) => {
       const componentId = e.dataTransfer.getData("componentId");
@@ -62,10 +64,11 @@ export default function DragAndDropArea({
         dropY,
         rect.width
       );
-      const draggedComponent = components.find((c) => c.id === componentId);
 
+      const draggedComponent = components.find((c) => c.id === componentId);
       if (!draggedComponent) return;
 
+      // Find if there's already a component at that position
       const targetComponent = components.find(
         (c) =>
           c.id !== componentId &&
@@ -77,6 +80,7 @@ export default function DragAndDropArea({
       let updatedComponents = [...components];
 
       if (targetComponent) {
+        // Swap positions if dropping onto an occupied grid
         updatedComponents = components.map((c) => {
           if (c.id === componentId) {
             return { ...c, position: targetComponent.position };
@@ -86,8 +90,10 @@ export default function DragAndDropArea({
           return c;
         });
       } else {
+        // Otherwise → move to new empty grid position
         const newPosition = { x: gridX, y: gridY };
 
+        // Ensure component stays inside the 12-column grid
         if (newPosition.x + draggedComponent.width > GRID_COLUMNS) {
           newPosition.x = Math.max(0, GRID_COLUMNS - draggedComponent.width);
         }
@@ -105,6 +111,7 @@ export default function DragAndDropArea({
     [components, calculateGridPosition, onReorderComponents]
   );
 
+  // Handle resize (update width only)
   const handleResize = useCallback(
     (id: string, newWidth: number) => {
       const component = components.find((c) => c.id === id);
@@ -118,6 +125,7 @@ export default function DragAndDropArea({
     [components, onUpdateComponent]
   );
 
+  // Handle dropping new or moved components into the grid
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -126,25 +134,28 @@ export default function DragAndDropArea({
       const componentType = e.dataTransfer.getData("componentType");
 
       if (componentType === "move") {
-        handleComponentReorder(e);
+        handleComponentReorder(e); // reorder existing component
       } else if (componentType === "text" || componentType === "image") {
-        onAddComponent(componentType);
+        onAddComponent(componentType); // add a new one
       }
     },
     [onAddComponent, handleComponentReorder]
   );
 
+  // Dragging over → show highlight
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
   }, []);
 
+  // Drag leave → remove highlight
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setIsDragOver(false);
     }
   }, []);
 
+  // Render component depending on type
   const renderComponent = useCallback(
     (component: ComponentType) => {
       const commonProps = {
@@ -184,16 +195,19 @@ export default function DragAndDropArea({
     ]
   );
 
+  // Sort components in reading order (top-to-bottom, left-to-right)
   const gridItems = components
     .sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x)
     .map(renderComponent);
 
+  // Calculate grid row count based on max Y
   const maxY =
     components.length > 0
       ? Math.max(...components.map((c) => c.position.y))
       : 0;
   const gridRows = maxY + 1;
 
+  // Render empty workspace when no components
   const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center h-96 text-slate-400">
       <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
@@ -222,6 +236,7 @@ export default function DragAndDropArea({
     </div>
   );
 
+  // Render "drop here" overlay during drag
   const renderDragOverState = () => (
     <div className="flex flex-col items-center justify-center h-96 text-slate-600">
       <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
@@ -248,19 +263,6 @@ export default function DragAndDropArea({
     </div>
   );
 
-  const renderGridOverlay = () => (
-    <div className="absolute inset-0 pointer-events-none">
-      <div className="grid grid-cols-12 h-full opacity-5">
-        {Array.from({ length: GRID_COLUMNS }, (_, i) => (
-          <div
-            key={i}
-            className="bg-slate-300 border border-slate-200 rounded-sm"
-          />
-        ))}
-      </div>
-    </div>
-  );
-
   return (
     <div
       className={`h-full relative transition-all duration-200 ${
@@ -270,6 +272,7 @@ export default function DragAndDropArea({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
+      {/* Empty, drag-over, or grid layout */}
       {components.length === 0 ? (
         renderEmptyState()
       ) : isDragOver ? (
@@ -289,8 +292,6 @@ export default function DragAndDropArea({
           {gridItems}
         </div>
       )}
-
-      {isEditing && renderGridOverlay()}
     </div>
   );
 }

@@ -36,9 +36,9 @@ export default function VisualBuilder() {
   const [showClearModal, setShowClearModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  /**
-   * Initialize mobile detection and set up resize listener
-   * Also handles initial data loading from localStorage
+  /*
+    Initialize mobile detection and set up resize listener
+    Also handles initial data loading from localStorage
    */
   useEffect(() => {
     // Mobile detection
@@ -120,9 +120,9 @@ export default function VisualBuilder() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  /**
-   * Consolidated localStorage persistence effect
-   * Saves all state changes to localStorage when they occur
+  /*
+    Consolidated localStorage persistence effect
+    Saves all state changes to localStorage when they occur
    */
   useEffect(() => {
     const saveToLocalStorage = () => {
@@ -159,9 +159,9 @@ export default function VisualBuilder() {
     saveToLocalStorage();
   }, [components, history, historyIndex, showPreview, isEditing, showSidebar]);
 
-  /**
-   * Calculate optimal position for new components based on grid layout
-   * Uses a 12-column grid system with automatic row wrapping
+  /*
+    Calculate optimal position for new components based on grid layout
+    Uses a 12-column grid system with automatic row wrapping
    */
   const calculateNextPosition = useCallback((): { x: number; y: number } => {
     if (components.length === 0) {
@@ -269,9 +269,9 @@ export default function VisualBuilder() {
     [calculateNextPosition]
   );
 
-  /**
-   * Debounced version of addToHistory for resize operations
-   * Prevents too many history entries during continuous resize operations
+  /*
+    Debounced version of addToHistory for resize operations
+    Prevents too many history entries during continuous resize operations
    */
   const debouncedAddToHistory = useCallback(
     (() => {
@@ -286,8 +286,8 @@ export default function VisualBuilder() {
     [addToHistory]
   );
 
-  /**
-   * Add a new component to the canvas and update history
+  /*
+    Add a new component to the canvas and update history
    */
   const addComponent = useCallback(
     (type: "text" | "image") => {
@@ -299,9 +299,9 @@ export default function VisualBuilder() {
     [components, createComponent, addToHistory]
   );
 
-  /**
-   * Update an existing component and add to history
-   * Used for content changes and position updates
+  /*
+    Update an existing component and add to history
+    Used for content changes and position updates
    */
   const updateComponent = useCallback(
     (updatedComponent: ComponentType) => {
@@ -314,9 +314,9 @@ export default function VisualBuilder() {
     [components, addToHistory]
   );
 
-  /**
-   * Update component with debounced history addition
-   * Used specifically for resize operations to avoid too many history entries
+  /*
+   Update component with debounced history addition
+    Used specifically for resize operations to avoid too many history entries
    */
   const updateComponentResize = useCallback(
     (updatedComponent: ComponentType) => {
@@ -329,9 +329,8 @@ export default function VisualBuilder() {
     [components, debouncedAddToHistory]
   );
 
-  /**
-   * Remove a component from the canvas
-   */
+  // Remove a component from the canvas
+
   const deleteComponent = useCallback(
     (id: string) => {
       const newComponents = components.filter((c) => c.id !== id);
@@ -341,9 +340,8 @@ export default function VisualBuilder() {
     [components, addToHistory]
   );
 
-  /**
-   * Reorder components (used for drag-and-drop functionality)
-   */
+  // Reorder components (used for drag-and-drop functionality)
+
   const reorderComponents = useCallback(
     (reorderedComponents: ComponentType[]) => {
       setComponents(reorderedComponents);
@@ -352,9 +350,8 @@ export default function VisualBuilder() {
     [addToHistory]
   );
 
-  /**
-   * Add sample data for demonstration purposes
-   */
+  // Add sample data for demonstration purposes
+
   const addSampleData = useCallback(() => {
     const sampleComponents: ComponentType[] = [
       {
@@ -387,9 +384,8 @@ export default function VisualBuilder() {
     setHistoryIndex(0);
   }, []);
 
-  /**
-   * Clear all components and reset the application state
-   */
+  // Clear all components and reset the application state
+
   const clearComponents = useCallback(() => {
     setComponents([]);
     setHistory([]);
@@ -405,9 +401,8 @@ export default function VisualBuilder() {
   );
   const handleClearCancel = useCallback(() => setShowClearModal(false), []);
 
-  /**
-   * Render the application header with logo, controls, and mode toggles
-   */
+  // Render the application header with logo, controls, and mode toggles
+
   const renderHeader = () => (
     <header className="bg-white border-b border-slate-200 shadow-sm">
       <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -520,9 +515,8 @@ export default function VisualBuilder() {
     </header>
   );
 
-  /**
-   * Render the component library sidebar
-   */
+  // Render the component library sidebar
+
   const renderSidebar = () => (
     <div className="w-full sm:w-80 bg-white border-b sm:border-b-0 sm:border-r border-slate-200 flex flex-col shadow-sm relative">
       <div className="flex-1 overflow-y-auto bg-white max-h-64 sm:max-h-none">
@@ -534,9 +528,8 @@ export default function VisualBuilder() {
     </div>
   );
 
-  /**
-   * Render floating plus button for collapsed sidebar state
-   */
+  // Render floating plus button for collapsed sidebar state
+
   const renderFloatingPlusButton = () => (
     <div className="fixed left-0 top-16 bottom-0 z-50 w-10 bg-white border-r border-gray-200 shadow-lg">
       <button
@@ -563,9 +556,8 @@ export default function VisualBuilder() {
     </div>
   );
 
-  /**
-   * Render the main drag and drop area
-   */
+  // Render the main drag and drop area
+
   const renderMainContent = () => (
     <div className="flex-1 overflow-y-auto py-5 ">
       <DragAndDropArea

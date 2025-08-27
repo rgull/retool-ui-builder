@@ -22,9 +22,9 @@ export default function TextComponent({
 }: TextComponentProps) {
   const [isMobile, setIsMobile] = useState(false);
 
-  /**
-   * Handle content editing (markdown text).
-   * Only fires when the textarea changes in editing mode.
+  /*
+    Handle content editing (markdown text).
+    Only fires when the textarea changes in editing mode.
    */
   const handleContentChange = (content: string) => {
     onUpdate({
@@ -33,9 +33,9 @@ export default function TextComponent({
     });
   };
 
-  /**
-   * Handle resize start (called when clicking + dragging a resize handle).
-   * Direction = "left" or "right".
+  /*
+    Handle resize start (called when clicking + dragging a resize handle).
+    Direction = "left" or "right".
    */
   const handleResizeStart = (
     e: React.MouseEvent,
@@ -53,9 +53,9 @@ export default function TextComponent({
     let finalWidth = startWidth;
     let finalPosition = startPosition;
 
-    /**
-     * Handle mouse move while resizing.
-     * Updates width + position in "live" mode via onUpdateResize().
+    /*
+      Handle mouse move while resizing.
+      Updates width + position in "live" mode via onUpdateResize().
      */
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - startX;
@@ -96,9 +96,9 @@ export default function TextComponent({
       }
     };
 
-    /**
-     * Handle mouse release.
-     * Finalize the resize with `onUpdate()`, so it’s added to history.
+    /*
+      Handle mouse release.
+      Finalize the resize with `onUpdate()`, so it’s added to history.
      */
     const handleMouseUp = () => {
       document.removeEventListener("mousemove", handleMouseMove);
@@ -117,9 +117,9 @@ export default function TextComponent({
     document.addEventListener("mouseup", handleMouseUp);
   };
 
-  /**
-   * Detect mobile devices (<=768px width).
-   * Forces preview-only mode on mobile.
+  /*
+    Detect mobile devices (<=768px width).
+    Forces preview-only mode on mobile.
    */
   useEffect(() => {
     setIsMobile(window.innerWidth <= 768);

@@ -20,7 +20,6 @@ export default function ImageComponent({
   onDelete,
   isEditing,
 }: ImageComponentProps) {
-  const [altText, setAltText] = useState(component.alt || ""); // Local alt text state
   const [isMobile, setIsMobile] = useState(false); // Tracks mobile mode (preview only)
   const [error, setError] = useState("");
 
@@ -32,14 +31,6 @@ export default function ImageComponent({
     });
   };
 
-  // Update component with new alt text
-  const handleAltChange = (alt: string) => {
-    setAltText(alt);
-    onUpdate({
-      ...component,
-      alt,
-    });
-  };
   //Image Component Url Chnage
   const handleChange = (value: string) => {
     handleUrlChange(value); // always update the field
@@ -49,7 +40,7 @@ export default function ImageComponent({
         "Please enter a valid image URL (e.g. https://placehold.co/600x400)"
       );
     } else {
-      setError(""); // clear error if valid
+      setError("");
     }
   };
 
@@ -106,7 +97,7 @@ export default function ImageComponent({
       }
     };
 
-    // When drag ends → commit final size
+    // When drag ends  commit final size
     const handleMouseUp = () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
@@ -242,7 +233,7 @@ export default function ImageComponent({
             {component.content ? (
               <img
                 src={component.content}
-                alt={altText}
+                alt={"invalid image"}
                 className="w-full h-auto max-h-96 object-cover rounded-lg shadow-sm"
                 onError={(e) => {
                   // Show placeholder if image fails to load
