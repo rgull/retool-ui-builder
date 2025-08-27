@@ -1,245 +1,247 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { ImageComponent as ImageComponentType } from '@/types';
+import React, { useState, useEffect } from "react";
+import { ImageComponent as ImageComponentType } from "@/types";
 
 interface ImageComponentProps {
   component: ImageComponentType;
-  onUpdate: (updatedComponent: ImageComponentType) => void;
-  onUpdateResize: (updatedComponent: ImageComponentType) => void;
-  onResize: (width: number) => void;
-  onDelete: (id: string) => void;
-  isEditing: boolean;
-  onTouchStart?: (e: React.TouchEvent) => void;
-  onTouchMove?: (e: React.TouchEvent) => void;
-  onTouchEnd?: (e: React.TouchEvent) => void;
+  onUpdate: (updatedComponent: ImageComponentType) => void; // Called when image content/alt/position is updated
+  onUpdateResize: (updatedComponent: ImageComponentType) => void; // Called during resize (live updates)
+  onDelete: (id: string) => void; // Delete component by ID
+  isEditing: boolean; // Flag to toggle between edit and preview mode
 }
 
-export default function ImageComponent({ 
-  component, 
-  onUpdate, 
+export default function ImageComponent({
+  component,
+  onUpdate,
   onUpdateResize,
-  onResize, 
   onDelete,
   isEditing,
-  onTouchStart,
-  onTouchMove,
-  onTouchEnd
 }: ImageComponentProps) {
-  const [isResizing, setIsResizing] = useState(false);
-  const [altText, setAltText] = useState(component.alt || '');
-  const [isMobile, setIsMobile] = useState(false);
+  const [isResizing, setIsResizing] = useState(false); // Tracks if resize is active
+  const [altText, setAltText] = useState(component.alt || ""); // Local alt text state
+  const [isMobile, setIsMobile] = useState(false); // Tracks mobile mode (preview only)
 
+  // Update component with new image URL
   const handleUrlChange = (url: string) => {
     onUpdate({
       ...component,
-      content: url
+      content: url,
     });
   };
 
+  // Update component with new alt text
   const handleAltChange = (alt: string) => {
     setAltText(alt);
     onUpdate({
       ...component,
-      alt
+      alt,
     });
   };
 
-  const handleResizeStart = (e: React.MouseEvent, direction: 'left' | 'right') => {
+  // Handle resize (dragging left or right handles)
+  const handleResizeStart = (
+    e: React.MouseEvent,
+    direction: "left" | "right"
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
-    
-    const startX = e.clientX;
-    const startWidth = component.width;
-    const startPosition = component.position.x;
-    
+
+    const startX = e.clientX; // Initial mouse X
+    const startWidth = component.width; // Current width in grid columns
+    const startPosition = component.position.x; // Current X position in grid
+
     let finalWidth = startWidth;
     let finalPosition = startPosition;
-    
+
+    // While dragging, update live width/position
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - startX;
-      const gridWidth = 100; // Approximate width of one grid column
-      const deltaColumns = Math.round(deltaX / gridWidth);
-      
+      const gridWidth = 100; // Approximate px size of one grid column
+      const deltaColumns = Math.round(deltaX / gridWidth); // Convert px → columns
+
       let newWidth = startWidth;
       let newPosition = startPosition;
-      
-      if (direction === 'left') {
-        // When resizing from left, decrease width and move position right
+
+      if (direction === "left") {
+        // Resizing from left decreases width & shifts position
         newWidth = Math.max(1, Math.min(12, startWidth - deltaColumns));
         newPosition = startPosition + (startWidth - newWidth);
       } else {
-        // When resizing from right, just change width
+        // Resizing from right only changes width
         newWidth = Math.max(1, Math.min(12, startWidth + deltaColumns));
         newPosition = startPosition;
       }
-      
-      // Ensure the component doesn't go outside the grid
+
+      // Ensure image stays within 12-column grid
       if (newPosition + newWidth <= 12 && newPosition >= 0) {
         finalWidth = newWidth;
         finalPosition = newPosition;
-        
-        if (newWidth !== component.width || newPosition !== component.position.x) {
+
+        // Update live resize preview
+        if (
+          newWidth !== component.width ||
+          newPosition !== component.position.x
+        ) {
           onUpdateResize({
             ...component,
             width: newWidth,
-            position: { ...component.position, x: newPosition }
+            position: { ...component.position, x: newPosition },
           });
         }
       }
     };
-    
+
+    // When drag ends → commit final size
     const handleMouseUp = () => {
       setIsResizing(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      
-      // Add to history when resize operation ends with the final values
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+
       const finalComponent = {
         ...component,
         width: finalWidth,
-        position: { ...component.position, x: finalPosition }
+        position: { ...component.position, x: finalPosition },
       };
       onUpdate(finalComponent);
     };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+
+    // Attach mouse listeners
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
   };
 
-  // Set mobile detection on mount
+  // Detect mobile (preview-only mode)
   useEffect(() => {
     setIsMobile(window.innerWidth <= 768);
-    
+
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleWidthChange = (newWidth: number) => {
-    if (newWidth >= 1 && newWidth <= 12) {
-      onResize(newWidth);
-    }
-  };
-
   return (
-         <div 
-       className={`relative transition-all duration-200 bg-white ${
-         isEditing 
-           ? 'border-2 border-dashed border-slate-300 hover:border-slate-400 md:cursor-move hover:bg-slate-50' 
-           : 'border-0'
-       }`}
-             style={{ 
-         gridColumn: isMobile ? 'span 12' : `${component.position.x + 1} / span ${component.width}`,
-         gridRow: isMobile ? 'auto' : `${component.position.y + 1}`,
-         minHeight: '100px'
-       }}
-       draggable={isEditing && !isMobile}
+    <div
+      className={`relative transition-all duration-200 bg-white ${
+        isEditing
+          ? "border-2 border-dashed border-slate-300 hover:border-slate-400 md:cursor-move hover:bg-slate-50"
+          : "border-0"
+      }`}
+      style={{
+        gridColumn: isMobile
+          ? "span 12" // Full width on mobile
+          : `${component.position.x + 1} / span ${component.width}`, // Grid placement on desktop
+        gridRow: isMobile ? "auto" : `${component.position.y + 1}`,
+        minHeight: "100px",
+      }}
+      draggable={isEditing && !isMobile} // Enable drag only on desktop while editing
       data-component-id={component.id}
       data-component-type="move"
-             onDragStart={(e) => {
-         if (!isMobile) {
-           e.dataTransfer.setData('componentId', component.id);
-           e.dataTransfer.setData('componentType', 'move');
-           // Add visual feedback during drag
-           e.currentTarget.style.opacity = '0.5';
-           e.currentTarget.style.transform = 'rotate(2deg)';
-         }
-       }}
-       onDragEnd={(e) => {
-         if (!isMobile) {
-           // Remove visual feedback after drag
-           e.currentTarget.style.opacity = '1';
-           e.currentTarget.style.transform = 'rotate(0deg)';
-         }
-       }}
-      onTouchStart={(e) => {
-        // Disabled on mobile - preview only
+      onDragStart={(e) => {
+        if (!isMobile) {
+          e.dataTransfer.setData("componentId", component.id);
+          e.dataTransfer.setData("componentType", "move");
+          // Add drag feedback
+          e.currentTarget.style.opacity = "0.5";
+          e.currentTarget.style.transform = "rotate(2deg)";
+        }
       }}
-      onTouchMove={(e) => {
-        // Disabled on mobile - preview only
+      onDragEnd={(e) => {
+        if (!isMobile) {
+          // Reset after drag ends
+          e.currentTarget.style.opacity = "1";
+          e.currentTarget.style.transform = "rotate(0deg)";
+        }
       }}
-      onTouchEnd={(e) => {
-        // Disabled on mobile - preview only
+      onTouchStart={() => {
+        // Disabled for now → preview-only on mobile
       }}
+      onTouchMove={() => {}}
+      onTouchEnd={() => {}}
     >
-                     {/* Resize handles */}
-        {isEditing && (
-          <>
-            <div 
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 w-3 h-12 bg-slate-600 cursor-ew-resize rounded-r hover:bg-slate-700 transition-all duration-200 shadow-md flex items-center justify-center"
-              onMouseDown={(e) => handleResizeStart(e, 'left')}
-              title="Drag to resize"
-            >
-              <div className="w-1 h-6 bg-white rounded opacity-80"></div>
-            </div>
-            <div 
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-12 bg-slate-600 cursor-ew-resize rounded-l hover:bg-slate-700 transition-all duration-200 shadow-md flex items-center justify-center"
-              title="Drag to resize"
-              onMouseDown={(e) => handleResizeStart(e, 'right')}
-            >
-              <div className="w-1 h-6 bg-white rounded opacity-80"></div>
-            </div>
-          </>
-        )}
+      {/* Resize handles */}
+      {isEditing && (
+        <>
+          {/* Left handle */}
+          <div
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 w-3 h-12 bg-slate-600 cursor-ew-resize rounded-r hover:bg-slate-700 transition-all duration-200 shadow-md flex items-center justify-center"
+            onMouseDown={(e) => handleResizeStart(e, "left")}
+            title="Drag to resize"
+          >
+            <div className="w-1 h-6 bg-white rounded opacity-80"></div>
+          </div>
+          {/* Right handle */}
+          <div
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-12 bg-slate-600 cursor-ew-resize rounded-l hover:bg-slate-700 transition-all duration-200 shadow-md flex items-center justify-center"
+            title="Drag to resize"
+            onMouseDown={(e) => handleResizeStart(e, "right")}
+          >
+            <div className="w-1 h-6 bg-white rounded opacity-80"></div>
+          </div>
+        </>
+      )}
 
-                           {/* Component label and delete button */}
-        {isEditing && (
-                     <div className="absolute -top-3 left-2 bg-slate-700 text-white text-xs px-3 py-1 rounded-lg flex items-center gap-2 shadow-md">
-             <span className="font-semibold tracking-tight">Image ({component.width}/12)</span>
-            <button
-              onClick={() => onDelete(component.id)}
-              className="ml-2 hover:bg-slate-800 rounded px-1 transition-colors"
-              title="Delete component"
-            >
-              ×
-            </button>
+      {/* Component label & delete button (only in editing mode) */}
+      {isEditing && (
+        <div className="absolute -top-3 left-2 bg-slate-700 text-white text-xs px-3 py-1 rounded-lg flex items-center gap-2 shadow-md">
+          <span className="font-semibold tracking-tight">
+            Image ({component.width}/12)
+          </span>
+          <button
+            onClick={() => onDelete(component.id)}
+            className="ml-2 hover:bg-slate-800 rounded px-1 transition-colors"
+            title="Delete component"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/*  Main content (edit vs preview) */}
+      <div className="w-full h-full">
+        {isEditing ? (
+          // Edit mode  input for image URL
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1 tracking-tight">
+                Image URL
+              </label>
+              <input
+                type="url"
+                value={component.content}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                className="w-full p-3 text-black border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                placeholder="https://placehold.co/600x400"
+              />
+            </div>
+          </div>
+        ) : (
+          // Preview mode  show image or fallback
+          <div className="w-full h-full flex items-center justify-center">
+            {component.content ? (
+              <img
+                src={component.content}
+                alt={altText}
+                className="w-full h-auto max-h-96 object-cover rounded-lg shadow-sm"
+                onError={(e) => {
+                  // Show placeholder if image fails to load
+                  e.currentTarget.src =
+                    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YWFhYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBmb3VuZDwvdGV4dD48L3N2Zz4=";
+                }}
+              />
+            ) : (
+              <div className="text-gray-400 text-center bg-white p-4 rounded-lg shadow-sm">
+                <div className="text-4xl mb-2">🖼️</div>
+                <div>No image URL provided</div>
+              </div>
+            )}
           </div>
         )}
-
-             {/* Content */}
-       <div className="w-full h-full">
-         {isEditing ? (
-           <div className="space-y-3">
-             <div>
-                               <label className="block text-sm font-semibold text-slate-700 mb-1 tracking-tight">
-                  Image URL
-                </label>
-                               <input
-                  type="url"
-                  value={component.content}
-                  onChange={(e) => handleUrlChange(e.target.value)}
-                  className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                  placeholder="https://placehold.co/600x400"
-                />
-             </div>
-             
-
-           </div>
-                   ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              {component.content ? (
-                <img
-                  src={component.content}
-                  alt={altText}
-                  className="w-full h-auto max-h-96 object-cover rounded-lg shadow-sm"
-                  onError={(e) => {
-                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YWFhYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBmb3VuZDwvdGV4dD48L3N2Zz4=';
-                  }}
-                />
-              ) : (
-                <div className="text-gray-400 text-center bg-white p-4 rounded-lg shadow-sm">
-                  <div className="text-4xl mb-2">🖼️</div>
-                  <div>No image URL provided</div>
-                </div>
-              )}
-            </div>
-          )}
-       </div>
+      </div>
     </div>
   );
 }

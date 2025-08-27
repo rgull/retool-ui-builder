@@ -1,120 +1,168 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { ComponentType, TextComponent, ImageComponent } from '@/types';
-import Canvas from '@/components/Canvas';
-import ComponentPalette from '@/components/ComponentPalette';
-import ConfirmationModal from '@/components/ConfirmationModal';
+import React, { useState, useEffect, useCallback } from "react";
+import { ComponentType, TextComponent, ImageComponent } from "@/types";
+import DragAndDropArea from "@/components/DragAndDropArea";
+import ComponentLibrarySidebar from "@/components/ComponentLibrarySidebar";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
+// Constants for localStorage keys to avoid typos and improve maintainability
 const LOCAL_STORAGE_KEYS = {
-  COMPONENTS: 'visual-builder-components',
-  HISTORY: 'visual-builder-history',
-  HISTORY_INDEX: 'visual-builder-history-index',
-  SHOW_PREVIEW: 'visual-builder-show-preview',
-  IS_EDITING: 'visual-builder-is-editing',
-  SHOW_SIDEBAR: 'visual-builder-show-sidebar',
+  COMPONENTS: "visual-builder-components",
+  HISTORY: "visual-builder-history",
+  HISTORY_INDEX: "visual-builder-history-index",
+  SHOW_PREVIEW: "visual-builder-show-preview",
+  IS_EDITING: "visual-builder-is-editing",
+  SHOW_SIDEBAR: "visual-builder-show-sidebar",
 } as const;
 
+// Mobile breakpoint constant
+const MOBILE_BREAKPOINT = 768;
+
+//ShortcutKey constants
+const KEY_Z = "z";
+const KEY_Y = "y";
+
 export default function VisualBuilder() {
+  // Core state management
   const [components, setComponents] = useState<ComponentType[]>([]);
   const [history, setHistory] = useState<ComponentType[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // UI state management
   const [showPreview, setShowPreview] = useState(false);
   const [isEditing, setIsEditing] = useState(true);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showClearModal, setShowClearModal] = useState(false);
-  const [isClient, setIsClient] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  /**
+   * Initialize mobile detection and set up resize listener
+   * Also handles initial data loading from localStorage
+   */
   useEffect(() => {
-    setIsClient(true);
-    setIsMobile(window.innerWidth <= 768);
-    
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    // Mobile detection
+    const checkMobile = () => window.innerWidth <= MOBILE_BREAKPOINT;
+    setIsMobile(checkMobile());
 
-  useEffect(() => {
-    if (!isClient) return;
-
-    const savedComponents = localStorage.getItem(LOCAL_STORAGE_KEYS.COMPONENTS);
-    const savedHistory = localStorage.getItem(LOCAL_STORAGE_KEYS.HISTORY);
-    const savedHistoryIndex = localStorage.getItem(LOCAL_STORAGE_KEYS.HISTORY_INDEX);
-    const savedShowPreview = localStorage.getItem(LOCAL_STORAGE_KEYS.SHOW_PREVIEW);
-    const savedIsEditing = localStorage.getItem(LOCAL_STORAGE_KEYS.IS_EDITING);
-    const savedShowSidebar = localStorage.getItem(LOCAL_STORAGE_KEYS.SHOW_SIDEBAR);
-
-    if (savedComponents) {
-      const parsedComponents = JSON.parse(savedComponents);
-      setComponents(parsedComponents);
-    }
-
-    if (savedHistory) {
-      const parsedHistory = JSON.parse(savedHistory);
-      setHistory(parsedHistory);
-    }
-
-    if (savedHistoryIndex) {
-      setHistoryIndex(parseInt(savedHistoryIndex));
-    }
-
-    if (savedShowPreview) {
-      setShowPreview(JSON.parse(savedShowPreview));
-    }
-
-    if (savedIsEditing) {
-      setIsEditing(JSON.parse(savedIsEditing));
-    }
-
-    if (savedShowSidebar) {
-      setShowSidebar(JSON.parse(savedShowSidebar));
-    }
-  }, [isClient]);
-
-  useEffect(() => {
-    if (isClient && isMobile) {
+    // Mobile-specific UI adjustments
+    if (checkMobile()) {
       setShowPreview(true);
       setIsEditing(false);
     }
-  }, [isClient, isMobile]);
 
+    // Load saved state from localStorage
+    const loadSavedState = () => {
+      try {
+        // Load components
+        const savedComponents = localStorage.getItem(
+          LOCAL_STORAGE_KEYS.COMPONENTS
+        );
+        if (savedComponents) {
+          setComponents(JSON.parse(savedComponents));
+        }
+
+        // Load history
+        const savedHistory = localStorage.getItem(LOCAL_STORAGE_KEYS.HISTORY);
+        if (savedHistory) {
+          setHistory(JSON.parse(savedHistory));
+        }
+
+        // Load history index
+        const savedHistoryIndex = localStorage.getItem(
+          LOCAL_STORAGE_KEYS.HISTORY_INDEX
+        );
+        if (savedHistoryIndex) {
+          setHistoryIndex(parseInt(savedHistoryIndex, 10));
+        }
+
+        // Load UI preferences
+        const savedShowPreview = localStorage.getItem(
+          LOCAL_STORAGE_KEYS.SHOW_PREVIEW
+        );
+        if (savedShowPreview) {
+          setShowPreview(JSON.parse(savedShowPreview));
+        }
+
+        const savedIsEditing = localStorage.getItem(
+          LOCAL_STORAGE_KEYS.IS_EDITING
+        );
+        if (savedIsEditing) {
+          setIsEditing(JSON.parse(savedIsEditing));
+        }
+
+        const savedShowSidebar = localStorage.getItem(
+          LOCAL_STORAGE_KEYS.SHOW_SIDEBAR
+        );
+        if (savedShowSidebar) {
+          setShowSidebar(JSON.parse(savedShowSidebar));
+        }
+      } catch (error) {
+        console.error("Error loading saved state:", error);
+      }
+    };
+
+    loadSavedState();
+
+    // Set up resize listener for mobile detection
+    const handleResize = () => {
+      const mobile = checkMobile();
+      setIsMobile(mobile);
+
+      // Auto-adjust UI for mobile
+      if (mobile) {
+        setShowPreview(true);
+        setIsEditing(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  /**
+   * Consolidated localStorage persistence effect
+   * Saves all state changes to localStorage when they occur
+   */
   useEffect(() => {
-    if (isClient) {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.COMPONENTS, JSON.stringify(components));
-    }
-  }, [components, isClient]);
+    const saveToLocalStorage = () => {
+      try {
+        localStorage.setItem(
+          LOCAL_STORAGE_KEYS.COMPONENTS,
+          JSON.stringify(components)
+        );
+        localStorage.setItem(
+          LOCAL_STORAGE_KEYS.HISTORY,
+          JSON.stringify(history)
+        );
+        localStorage.setItem(
+          LOCAL_STORAGE_KEYS.HISTORY_INDEX,
+          historyIndex.toString()
+        );
+        localStorage.setItem(
+          LOCAL_STORAGE_KEYS.SHOW_PREVIEW,
+          JSON.stringify(showPreview)
+        );
+        localStorage.setItem(
+          LOCAL_STORAGE_KEYS.IS_EDITING,
+          JSON.stringify(isEditing)
+        );
+        localStorage.setItem(
+          LOCAL_STORAGE_KEYS.SHOW_SIDEBAR,
+          JSON.stringify(showSidebar)
+        );
+      } catch (error) {
+        console.error("Error saving to localStorage:", error);
+      }
+    };
 
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.HISTORY, JSON.stringify(history));
-    }
-  }, [history, isClient]);
+    saveToLocalStorage();
+  }, [components, history, historyIndex, showPreview, isEditing, showSidebar]);
 
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.HISTORY_INDEX, historyIndex.toString());
-    }
-  }, [historyIndex, isClient]);
-
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.SHOW_PREVIEW, JSON.stringify(showPreview));
-    }
-  }, [showPreview, isClient]);
-
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.IS_EDITING, JSON.stringify(isEditing));
-    }
-  }, [isEditing, isClient]);
-
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.SHOW_SIDEBAR, JSON.stringify(showSidebar));
-    }
-  }, [showSidebar, isClient]);
-
+  /**
+   * Calculate optimal position for new components based on grid layout
+   * Uses a 12-column grid system with automatic row wrapping
+   */
   const calculateNextPosition = useCallback((): { x: number; y: number } => {
     if (components.length === 0) {
       return { x: 0, y: 0 };
@@ -123,20 +171,85 @@ export default function VisualBuilder() {
     const lastComponent = components[components.length - 1];
     const nextX = lastComponent.position.x + lastComponent.width;
 
+    // Check if component fits in current row (12-column grid)
     if (nextX + 6 <= 12) {
+      // Default width is 6 columns
       return { x: nextX, y: lastComponent.position.y };
     } else {
+      // Move to next row
       return { x: 0, y: lastComponent.position.y + 1 };
     }
   }, [components]);
 
+  // Add current state to history for undo/redo functionality
+
+  const addToHistory = useCallback(
+    (newComponents: ComponentType[]) => {
+      // Remove any future history if we're not at the end
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(newComponents);
+
+      // Limit history size to prevent memory issues
+      if (newHistory.length > 50) {
+        newHistory.shift();
+      } else {
+        setHistoryIndex(newHistory.length - 1);
+      }
+
+      setHistory(newHistory);
+    },
+    [history, historyIndex]
+  );
+
+  // Undo the last action
+
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setComponents(history[newIndex]);
+    }
+  }, [history, historyIndex]);
+
+  // Redo the last undone action
+
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setComponents(history[newIndex]);
+    }
+  }, [history, historyIndex]);
+
+  //Set up keyboard shortcuts for undo/redo functionality
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === KEY_Z && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+        } else if (e.key === KEY_Y || (e.key === KEY_Z && e.shiftKey)) {
+          e.preventDefault();
+          redo();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
+
+  // Factory function to create new components with default values
+
   const createComponent = useCallback(
     (type: "text" | "image"): ComponentType => {
       const position = calculateNextPosition();
+      const timestamp = Date.now();
 
       if (type === "text") {
         return {
-          id: `text-${Date.now()}`,
+          id: `text-${timestamp}`,
           type: "text",
           content:
             "# New Text Component\n\nEnter your markdown content here...\n\n- **Bold text**\n- *Italic text*\n- `Code snippets`",
@@ -145,7 +258,7 @@ export default function VisualBuilder() {
         } as TextComponent;
       } else {
         return {
-          id: `image-${Date.now()}`,
+          id: `image-${timestamp}`,
           type: "image",
           content: "https://placehold.co/600x400",
           width: 6,
@@ -156,6 +269,26 @@ export default function VisualBuilder() {
     [calculateNextPosition]
   );
 
+  /**
+   * Debounced version of addToHistory for resize operations
+   * Prevents too many history entries during continuous resize operations
+   */
+  const debouncedAddToHistory = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (newComponents: ComponentType[]) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          addToHistory(newComponents);
+        }, 300);
+      };
+    })(),
+    [addToHistory]
+  );
+
+  /**
+   * Add a new component to the canvas and update history
+   */
   const addComponent = useCallback(
     (type: "text" | "image") => {
       const newComponent = createComponent(type);
@@ -163,9 +296,13 @@ export default function VisualBuilder() {
       setComponents(newComponents);
       addToHistory(newComponents);
     },
-    [components, createComponent]
+    [components, createComponent, addToHistory]
   );
 
+  /**
+   * Update an existing component and add to history
+   * Used for content changes and position updates
+   */
   const updateComponent = useCallback(
     (updatedComponent: ComponentType) => {
       const newComponents = components.map((c) =>
@@ -174,9 +311,13 @@ export default function VisualBuilder() {
       setComponents(newComponents);
       addToHistory(newComponents);
     },
-    [components]
+    [components, addToHistory]
   );
 
+  /**
+   * Update component with debounced history addition
+   * Used specifically for resize operations to avoid too many history entries
+   */
   const updateComponentResize = useCallback(
     (updatedComponent: ComponentType) => {
       const newComponents = components.map((c) =>
@@ -185,25 +326,42 @@ export default function VisualBuilder() {
       setComponents(newComponents);
       debouncedAddToHistory(newComponents);
     },
-    [components]
+    [components, debouncedAddToHistory]
   );
 
+  /**
+   * Remove a component from the canvas
+   */
   const deleteComponent = useCallback(
     (id: string) => {
       const newComponents = components.filter((c) => c.id !== id);
       setComponents(newComponents);
       addToHistory(newComponents);
     },
-    [components]
+    [components, addToHistory]
   );
 
+  /**
+   * Reorder components (used for drag-and-drop functionality)
+   */
+  const reorderComponents = useCallback(
+    (reorderedComponents: ComponentType[]) => {
+      setComponents(reorderedComponents);
+      addToHistory(reorderedComponents);
+    },
+    [addToHistory]
+  );
+
+  /**
+   * Add sample data for demonstration purposes
+   */
   const addSampleData = useCallback(() => {
     const sampleComponents: ComponentType[] = [
       {
         id: "sample-text-1",
         type: "text",
         content:
-          "# Welcome to Visual Builder\n\nThis is a **professional visual builder** that allows you to create layouts with text and image components.\n\n## Features\n- ✅ Text components with markdown support\n- ✅ Image components from URLs\n- ✅ 12-grid system for responsive layouts\n- ✅ Live preview mode\n- ✅ Component resizing\n- ✅ Undo/Redo functionality",
+          "# Welcome to Visual Builder\n\nThis is a **professional visual builder** that allows you to create layouts with text and image components.\n\n## Features\n- Text components with markdown support\n- Image components from URLs\n- 12-grid system for responsive layouts\n- Live preview mode\n- Component resizing\n- Undo/Redo functionality",
         width: 12,
         position: { x: 0, y: 0 },
       } as TextComponent,
@@ -223,11 +381,15 @@ export default function VisualBuilder() {
         position: { x: 6, y: 1 },
       } as TextComponent,
     ];
+
     setComponents(sampleComponents);
     setHistory([sampleComponents]);
     setHistoryIndex(0);
   }, []);
 
+  /**
+   * Clear all components and reset the application state
+   */
   const clearComponents = useCallback(() => {
     setComponents([]);
     setHistory([]);
@@ -235,83 +397,17 @@ export default function VisualBuilder() {
     setShowClearModal(false);
   }, []);
 
-  const addToHistory = useCallback(
-    (newComponents: ComponentType[]) => {
-      const newHistory = history.slice(0, historyIndex + 1);
-      newHistory.push(newComponents);
-      setHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-    },
-    [history, historyIndex]
+  // Modal handlers
+  const handleClearClick = useCallback(() => setShowClearModal(true), []);
+  const handleClearConfirm = useCallback(
+    () => clearComponents(),
+    [clearComponents]
   );
+  const handleClearCancel = useCallback(() => setShowClearModal(false), []);
 
-  const debouncedAddToHistory = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout;
-      return (newComponents: ComponentType[]) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          addToHistory(newComponents);
-        }, 300);
-      };
-    })(),
-    [addToHistory]
-  );
-
-  const reorderComponents = useCallback(
-    (reorderedComponents: ComponentType[]) => {
-      setComponents(reorderedComponents);
-      addToHistory(reorderedComponents);
-    },
-    [addToHistory]
-  );
-
-  const undo = useCallback(() => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      setComponents(history[newIndex]);
-    }
-  }, [history, historyIndex]);
-
-  const redo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      setComponents(history[newIndex]);
-    }
-  }, [history, historyIndex]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === "y") {
-        e.preventDefault();
-        redo();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === "z" && e.shiftKey) {
-        e.preventDefault();
-        redo();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo]);
-
-  const handleClearClick = useCallback(() => {
-    setShowClearModal(true);
-  }, []);
-
-  const handleClearConfirm = useCallback(() => {
-    clearComponents();
-  }, [clearComponents]);
-
-  const handleClearCancel = useCallback(() => {
-    setShowClearModal(false);
-  }, []);
-
+  /**
+   * Render the application header with logo, controls, and mode toggles
+   */
   const renderHeader = () => (
     <header className="bg-white border-b border-slate-200 shadow-sm">
       <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -338,7 +434,7 @@ export default function VisualBuilder() {
                 Visual Builder
               </h1>
               <p className="text-sm text-slate-500 font-medium">
-                Professional Layout Builder
+                Drag and Drop to build Layout
               </p>
             </div>
           </div>
@@ -424,10 +520,13 @@ export default function VisualBuilder() {
     </header>
   );
 
+  /**
+   * Render the component library sidebar
+   */
   const renderSidebar = () => (
     <div className="w-full sm:w-80 bg-white border-b sm:border-b-0 sm:border-r border-slate-200 flex flex-col shadow-sm relative">
       <div className="flex-1 overflow-y-auto bg-white max-h-64 sm:max-h-none">
-        <ComponentPalette
+        <ComponentLibrarySidebar
           onAddComponent={addComponent}
           onCloseSidebar={() => setShowSidebar(false)}
         />
@@ -435,12 +534,15 @@ export default function VisualBuilder() {
     </div>
   );
 
+  /**
+   * Render floating plus button for collapsed sidebar state
+   */
   const renderFloatingPlusButton = () => (
     <div className="fixed left-0 top-16 bottom-0 z-50 w-10 bg-white border-r border-gray-200 shadow-lg">
       <button
         onClick={() => setShowSidebar(true)}
         className="w-full h-16 bg-gradient-to-b from-slate-50 to-white flex items-center justify-center text-slate-600 hover:text-slate-900 hover:from-slate-100 hover:to-slate-50 transition-all duration-200 group"
-        title="Show sidebar"
+        title="Add component"
       >
         <div className="w-7 h-7 bg-slate-100 group-hover:bg-slate-200 rounded-lg flex items-center justify-center transition-colors">
           <svg
@@ -461,9 +563,12 @@ export default function VisualBuilder() {
     </div>
   );
 
+  /**
+   * Render the main drag and drop area
+   */
   const renderMainContent = () => (
-    <div className="flex-1">
-      <Canvas
+    <div className="flex-1 overflow-y-auto py-5 ">
+      <DragAndDropArea
         components={components}
         onUpdateComponent={updateComponent}
         onUpdateComponentResize={updateComponentResize}
@@ -480,7 +585,9 @@ export default function VisualBuilder() {
       {renderHeader()}
 
       <main className="flex flex-col sm:flex-row h-[calc(100vh-80px)]">
+        {/* Conditional sidebar rendering */}
         {isEditing && !isMobile && showSidebar && renderSidebar()}
+
         <div
           className={`flex-1 flex flex-col ${
             isEditing && !isMobile && !showSidebar ? "ml-12" : ""
@@ -493,12 +600,11 @@ export default function VisualBuilder() {
       {/* Floating plus button when sidebar is hidden */}
       {isEditing && !isMobile && !showSidebar && renderFloatingPlusButton()}
 
+      {/* Confirmation modal for clearing components */}
       <ConfirmationModal
         isOpen={showClearModal}
         title="Clear All Components"
         message="Are you sure you want to clear all components? This action cannot be undone and will remove all your work."
-        confirmText="Clear All"
-        cancelText="Cancel"
         onConfirm={handleClearConfirm}
         onCancel={handleClearCancel}
       />
