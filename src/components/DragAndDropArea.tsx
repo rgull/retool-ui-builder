@@ -1,17 +1,16 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { ComponentType } from "@/types";
 import TextComponentRenderer from "./TextComponent";
 import ImageComponentRenderer from "./ImageComponent";
 
 interface DragAndDropAreaProps {
-  components: ComponentType[]; // List of components (text/image)
-  onUpdateComponent: (updatedComponent: ComponentType) => void; // Update after edit
-  onUpdateComponentResize: (updatedComponent: ComponentType) => void; // Live update during resize
+  components: any[]; // List of components (text/image)
+  onUpdateComponent: (updatedComponent: any) => void; // Update after edit
+  onUpdateComponentResize: (updatedComponent: any) => void; // Live update during resize
   onDeleteComponent: (id: string) => void; // Delete a component
-  onAddComponent: (type: "text" | "image") => void; // Add new component
-  onReorderComponents: (components: ComponentType[]) => void; // Reorder list after drag/drop
+  onAddComponent: (type: any) => void; // Add new component
+  onReorderComponents: (components: any[]) => void; // Reorder list after drag/drop
   isEditing: boolean; // Flag for edit vs preview mode
 }
 
@@ -157,7 +156,7 @@ export default function DragAndDropArea({
 
   // Render component depending on type
   const renderComponent = useCallback(
-    (component: ComponentType) => {
+    (component: any) => {
       const commonProps = {
         onUpdate: onUpdateComponent,
         onUpdateResize: onUpdateComponentResize,

@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { TextComponent as TextComponentType } from "@/types";
 
 // Props definition for the TextComponent
 interface TextComponentProps {
-  component: TextComponentType;
-  onUpdate: (updatedComponent: TextComponentType) => void; // Called when content/size/position changes are finalized
-  onUpdateResize: (updatedComponent: TextComponentType) => void; // Called during live resize (dragging handles)
+  component: any;
+  onUpdate: (updatedComponent: any) => void; // Called when content/size/position changes are finalized
+  onUpdateResize: (updatedComponent: any) => void; // Called during live resize (dragging handles)
   onDelete: (id: string) => void;
   isEditing: boolean;
 }
@@ -136,7 +135,7 @@ export default function TextComponent({
     <div
       className={`relative transition-all duration-200 ${
         isEditing
-          ? "border-2 border-dashed border-slate-300 hover:border-slate-400 md:cursor-move hover:bg-slate-50"
+          ? "border-2 border-dashed border-slate-300 hover:border-slate-400 md:cursor-move"
           : "border-0"
       }`}
       style={{
@@ -173,7 +172,7 @@ export default function TextComponent({
         <>
           {/* Left resize handle */}
           <div
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 w-3 h-12 bg-slate-600 cursor-ew-resize rounded-r hover:bg-slate-700 transition-all duration-200 shadow-md flex items-center justify-center"
+            className="absolute left-0 top-1/2 transform h-full cursor-ew-resize rounded-r flex items-center justify-center"
             onMouseDown={(e) => handleResizeStart(e, "left")}
             title="Drag to resize"
           >
@@ -182,7 +181,7 @@ export default function TextComponent({
 
           {/* Right resize handle */}
           <div
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-12 bg-slate-600 cursor-ew-resize rounded-l hover:bg-slate-700 transition-all duration-200 shadow-md flex items-center justify-center"
+            className="absolute right-0 top-1/2 transform h-full cursor-ew-resize rounded-r flex items-center justify-center"
             onMouseDown={(e) => handleResizeStart(e, "right")}
             title="Drag to resize"
           >
@@ -217,7 +216,7 @@ export default function TextComponent({
             placeholder="Enter markdown text here..."
           />
         ) : (
-          <div className="prose prose-sm max-w-none prose-slate bg-white p-4 rounded-lg shadow-sm">
+          <div className="prose prose-sm max-w-none prose-slate bg-white p-4">
             <ReactMarkdown>{component.content}</ReactMarkdown>
           </div>
         )}

@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ImageComponent as ImageComponentType } from "@/types";
 
 interface ImageComponentProps {
-  component: ImageComponentType;
-  onUpdate: (updatedComponent: ImageComponentType) => void; // Called when image content/alt/position is updated
-  onUpdateResize: (updatedComponent: ImageComponentType) => void; // Called during resize (live updates)
+  component: any;
+  onUpdate: (updatedComponent: any) => void; // Called when image content/alt/position is updated
+  onUpdateResize: (updatedComponent: any) => void; // Called during resize (live updates)
   onDelete: (id: string) => void; // Delete component by ID
   isEditing: boolean; // Flag to toggle between edit and preview mode
 }
@@ -37,7 +36,7 @@ export default function ImageComponent({
 
     if (!IMAGE_URL_REGEX.test(value) && value.trim() !== "") {
       setError(
-        "Please enter a valid image URL (e.g. https://placehold.co/600x400)"
+        "Please enter a valid image URL (e.g. https://placehold.co/600x400/orange/white)"
       );
     } else {
       setError("");
@@ -131,7 +130,7 @@ export default function ImageComponent({
     <div
       className={`relative transition-all duration-200 bg-white ${
         isEditing
-          ? "border-2 border-dashed border-slate-300 hover:border-slate-400 md:cursor-move hover:bg-slate-50"
+          ? "border-2 border-dashed border-slate-300 hover:border-slate-400 md:cursor-move"
           : "border-0"
       }`}
       style={{
@@ -171,7 +170,7 @@ export default function ImageComponent({
         <>
           {/* Left handle */}
           <div
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 w-3 h-12 bg-slate-600 cursor-ew-resize rounded-r hover:bg-slate-700 transition-all duration-200 shadow-md flex items-center justify-center"
+            className="absolute left-0 top-1/2 transform h-full cursor-ew-resize rounded-r flex items-center justify-center"
             onMouseDown={(e) => handleResizeStart(e, "left")}
             title="Drag to resize"
           >
@@ -179,7 +178,7 @@ export default function ImageComponent({
           </div>
           {/* Right handle */}
           <div
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-12 bg-slate-600 cursor-ew-resize rounded-l hover:bg-slate-700 transition-all duration-200 shadow-md flex items-center justify-center"
+            className="absolute right-0 top-1/2 transform h-full cursor-ew-resize rounded-r flex items-center justify-center"
             title="Drag to resize"
             onMouseDown={(e) => handleResizeStart(e, "right")}
           >
@@ -222,7 +221,7 @@ export default function ImageComponent({
                     ? "border-red-500 focus:ring-red-500 focus:border-red-500"
                     : "border-slate-200 focus:ring-blue-500 focus:border-blue-500"
                 }`}
-                placeholder="https://placehold.co/600x400"
+                placeholder="https://placehold.co/600x400/orange/white"
               />
               {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
             </div>

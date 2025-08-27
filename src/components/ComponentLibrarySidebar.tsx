@@ -4,7 +4,7 @@ import React from "react";
 
 interface ComponentLibrarySidebarProps {
   // Callback when a component is added (drag or click)
-  onAddComponent: (type: "text" | "image") => void;
+  onAddComponent: (type: any) => void;
   // Optional callback to close sidebar
   onCloseSidebar?: () => void;
 }
@@ -13,10 +13,10 @@ interface ComponentLibrarySidebarProps {
 const COMPONENTS = [
   {
     type: "text" as const,
-    name: "Text Block",
-    description: "Add rich text content with markdown support",
+    name: "Text Component",
+    description: "Add text content with markdown support",
     icon: (
-      // Text block icon
+      // Text component icon
       <svg
         className="w-5 h-5"
         fill="none"
@@ -35,10 +35,10 @@ const COMPONENTS = [
   },
   {
     type: "image" as const,
-    name: "Image Block",
+    name: "Image Component",
     description: "Add images from URLs with responsive sizing",
     icon: (
-      // Image block icon
+      // Image component icon
       <svg
         className="w-5 h-5"
         fill="none"
@@ -62,12 +62,12 @@ export default function ComponentLibrarySidebar({
   onCloseSidebar,
 }: ComponentLibrarySidebarProps) {
   // Handles drag start puts component type into `dataTransfer`
-  const handleDragStart = (e: React.DragEvent, type: "text" | "image") => {
+  const handleDragStart = (e: React.DragEvent, type: any) => {
     e.dataTransfer.setData("componentType", type);
   };
 
   // Handles click instantly adds component
-  const handleClick = (type: "text" | "image") => {
+  const handleClick = (type: any) => {
     onAddComponent(type);
   };
 
@@ -80,7 +80,7 @@ export default function ComponentLibrarySidebar({
         {onCloseSidebar && (
           <button
             onClick={onCloseSidebar}
-            className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-1 text-gray-400 rounded-lg"
             title="Close sidebar"
           >
             <svg
