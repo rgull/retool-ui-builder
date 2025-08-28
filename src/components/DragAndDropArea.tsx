@@ -12,6 +12,8 @@ interface DragAndDropAreaProps {
   onAddComponent: (type: any) => void; // Add new component
   onReorderComponents: (components: any[]) => void; // Reorder list after drag/drop
   isEditing: boolean; // Flag for edit vs preview mode
+  onSelectComponent: (component: any | null) => void; // Select component for properties panel
+  selectedComponentId: string | undefined; // Currently selected component ID
 }
 
 interface GridPosition {
@@ -29,8 +31,16 @@ export default function DragAndDropArea({
   onAddComponent,
   onReorderComponents,
   isEditing,
+  onSelectComponent,
+  selectedComponentId,
 }: DragAndDropAreaProps) {
   const [isDragOver, setIsDragOver] = useState(false); // Tracks when an item is being dragged over
+  const [dragPreview, setDragPreview] = useState<{
+    position: GridPosition;
+    width: number;
+    type: string;
+    isVisible: boolean;
+  } | null>(null);
 
   // Convert mouse drop position (x,y) → grid (column,row)
   const calculateGridPosition = useCallback(
@@ -41,8 +51,18 @@ export default function DragAndDropArea({
         Math.min(GRID_COLUMNS - 1, Math.floor(dropX / gridWidth))
       );
 
-      const rowHeight = 80; // Fixed row height
-      const gridY = Math.max(0, Math.floor(dropY / rowHeight));
+      // Calculate row position - try to match the actual grid structure
+      // The grid uses minmax(100px, auto) so we need to account for this
+      const minRowHeight = 100; // Minimum row height from CSS
+      const gridY = Math.max(0, Math.floor(dropY / minRowHeight));
+
+      console.log("Position calculation:", {
+        dropX,
+        dropY,
+        gridX,
+        gridY,
+        minRowHeight,
+      });
 
       return { x: gridX, y: gridY };
     },
@@ -129,6 +149,7 @@ export default function DragAndDropArea({
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragOver(false);
+      setDragPreview(null);
 
       const componentType = e.dataTransfer.getData("componentType");
 
@@ -141,16 +162,68 @@ export default function DragAndDropArea({
     [onAddComponent, handleComponentReorder]
   );
 
-  // Dragging over → show highlight
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
+  // Dragging over → show highlight and preview
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(true);
 
-  // Drag leave → remove highlight
+      // Calculate preview position
+      const targetElement = e.currentTarget as HTMLElement;
+      const rect = targetElement.getBoundingClientRect();
+      const dropX = e.clientX - rect.left;
+      const dropY = e.clientY - rect.top;
+
+      console.log("Drag position:", { dropX, dropY, rectWidth: rect.width });
+
+      const { x: gridX, y: gridY } = calculateGridPosition(
+        dropX,
+        dropY,
+        rect.width
+      );
+
+      console.log("Grid position:", { gridX, gridY });
+
+      const componentType = e.dataTransfer.getData("componentType");
+      const componentId = e.dataTransfer.getData("componentId");
+
+      if (componentType === "move" && componentId) {
+        // Moving existing component
+        const draggedComponent = components.find((c) => c.id === componentId);
+        if (draggedComponent) {
+          let previewX = gridX;
+          const previewY = gridY;
+
+          // Ensure component stays inside the 12-column grid
+          if (previewX + draggedComponent.width > GRID_COLUMNS) {
+            previewX = Math.max(0, GRID_COLUMNS - draggedComponent.width);
+          }
+
+          setDragPreview({
+            position: { x: previewX, y: previewY },
+            width: draggedComponent.width,
+            type: draggedComponent.type,
+            isVisible: true,
+          });
+        }
+      } else if (componentType === "text" || componentType === "image") {
+        // Adding new component
+        setDragPreview({
+          position: { x: gridX, y: gridY },
+          width: 6, // Default width for new components
+          type: componentType,
+          isVisible: true,
+        });
+      }
+    },
+    [calculateGridPosition, components]
+  );
+
+  // Drag leave → remove highlight and preview
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setIsDragOver(false);
+      setDragPreview(null);
     }
   }, []);
 
@@ -162,6 +235,8 @@ export default function DragAndDropArea({
         onUpdateResize: onUpdateComponentResize,
         onDelete: onDeleteComponent,
         isEditing,
+        onSelect: onSelectComponent,
+        isSelected: selectedComponentId === component.id,
       };
 
       switch (component.type) {
@@ -190,6 +265,8 @@ export default function DragAndDropArea({
       onUpdateComponentResize,
       onDeleteComponent,
       isEditing,
+      onSelectComponent,
+      selectedComponentId,
       handleResize,
     ]
   );
@@ -235,32 +312,26 @@ export default function DragAndDropArea({
     </div>
   );
 
-  // Render "drop here" overlay during drag
-  const renderDragOverState = () => (
-    <div className="flex flex-col items-center justify-center h-96 text-slate-600">
-      <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-        <svg
-          className="w-10 h-10 text-blue-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-          />
-        </svg>
+  // Render drag preview
+  const renderDragPreview = () => {
+    if (!dragPreview || !dragPreview.isVisible) return null;
+
+    const previewStyle = {
+      gridColumn: `${dragPreview.position.x + 1} / span ${dragPreview.width}`,
+      gridRow: `${dragPreview.position.y + 1}`,
+    };
+
+    return (
+      <div
+        className="absolute pointer-events-none z-10 border-2 border-dashed border-blue-400 bg-blue-50 bg-opacity-50 rounded-lg"
+        style={previewStyle}
+      >
+        <div className="flex items-center justify-center h-full text-blue-600 font-medium">
+          {dragPreview.type === "text" ? "📝 Text" : "🖼️ Image"}
+        </div>
       </div>
-      <h4 className="text-xl font-semibold mb-2 tracking-tight">
-        Drop to Reorder
-      </h4>
-      <p className="text-center max-w-md text-slate-500">
-        Release to place the component in this position
-      </p>
-    </div>
-  );
+    );
+  };
 
   return (
     <div
@@ -270,15 +341,19 @@ export default function DragAndDropArea({
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
+      onClick={(e) => {
+        // Clear selection when clicking on empty space
+        if (e.target === e.currentTarget) {
+          onSelectComponent(null);
+        }
+      }}
     >
-      {/* Empty, drag-over, or grid layout */}
+      {/* Empty or grid layout */}
       {components.length === 0 ? (
         renderEmptyState()
-      ) : isDragOver ? (
-        renderDragOverState()
       ) : (
         <div
-          className={`grid grid-cols-12 w-full ${
+          className={`grid grid-cols-12 w-full relative ${
             !isEditing ? "gap-4 p-6" : ""
           }`}
           style={{
@@ -289,6 +364,7 @@ export default function DragAndDropArea({
           }}
         >
           {gridItems}
+          {renderDragPreview()}
         </div>
       )}
     </div>

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import DragAndDropArea from "@/components/DragAndDropArea";
 import ComponentLibrarySidebar from "@/components/ComponentLibrarySidebar";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import PropertiesPanel from "@/components/PropertiesPanel";
 
 // Constants for localStorage keys to avoid typos and improve maintainability
 const LOCAL_STORAGE_KEYS = {
@@ -34,6 +35,7 @@ export default function VisualBuilder() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [showClearModal, setShowClearModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedComponent, setSelectedComponent] = useState<any | null>(null);
 
   /*
     Initialize mobile detection and set up resize listener
@@ -471,6 +473,8 @@ export default function VisualBuilder() {
         onAddComponent={addComponent}
         onReorderComponents={reorderComponents}
         isEditing={!showPreview}
+        onSelectComponent={setSelectedComponent}
+        selectedComponentId={selectedComponent?.id}
       />
     </div>
   );
@@ -489,6 +493,19 @@ export default function VisualBuilder() {
         >
           {renderMainContent()}
         </div>
+
+        {/* Properties Panel */}
+        {isEditing && !isMobile && (
+          <PropertiesPanel
+            selectedComponent={
+              components.find((c) => c.id === selectedComponent?.id) ||
+              selectedComponent
+            }
+            onUpdate={updateComponent}
+            isVisible={!!selectedComponent}
+            onClose={() => setSelectedComponent(null)}
+          />
+        )}
       </main>
 
       {/* Floating plus button when sidebar is hidden */}
