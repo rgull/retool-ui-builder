@@ -10,6 +10,8 @@ interface TextComponentProps {
   onUpdateResize: (updatedComponent: any) => void; // Called during live resize (dragging handles)
   onDelete: (id: string) => void;
   isEditing: boolean;
+  onSelect: (component: any) => void; // Select component for properties panel
+  isSelected: boolean; // Whether this component is currently selected
 }
 
 export default function TextComponent({
@@ -18,8 +20,13 @@ export default function TextComponent({
   onUpdateResize,
   onDelete,
   isEditing,
+  onSelect,
+  isSelected,
 }: TextComponentProps) {
   const [isMobile, setIsMobile] = useState(false);
+
+  // Debug: Log component content changes
+  console.log(`TextComponent ${component.id} content:`, component.content);
 
   /*
     Handle content editing (markdown text).
@@ -135,9 +142,16 @@ export default function TextComponent({
     <div
       className={`relative transition-all duration-200 ${
         isEditing
-          ? "border-2 border-dashed border-slate-300 hover:border-slate-400 md:cursor-move"
+          ? isSelected
+            ? "border-2 border-solid border-blue-500 bg-blue-50"
+            : "border-2 border-dashed border-slate-300 hover:border-slate-400 md:cursor-pointer"
           : "border-0"
       }`}
+      onClick={() => {
+        if (isEditing) {
+          onSelect(component);
+        }
+      }}
       style={{
         // On mobile: full width (span 12)
         gridColumn: isMobile
@@ -206,20 +220,13 @@ export default function TextComponent({
         </div>
       )}
 
-      {/* Content (editable textarea in edit mode, markdown preview in preview mode) */}
-      <div className="w-full h-full bg-white">
-        {isEditing && !isMobile ? (
-          <textarea
-            value={component.content}
-            onChange={(e) => handleContentChange(e.target.value)}
-            className="w-full text-black h-full min-h-[80px] p-4 border border-slate-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-mono text-sm bg-white"
-            placeholder="Enter markdown text here..."
-          />
-        ) : (
-          <div className="prose prose-sm max-w-none prose-slate bg-white p-4">
-            <ReactMarkdown>{component.content}</ReactMarkdown>
+      {/* Content (markdown preview only - editing moved to properties panel) */}
+      <div className="w-full h-full bg-white overflow-hidden">
+        <div className="prose prose-sm prose-slate bg-white p-4 w-full h-full overflow-auto">
+          <div className="break-words whitespace-pre-wrap">
+            <ReactMarkdown>{component.content || "No content"}</ReactMarkdown>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
