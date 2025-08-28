@@ -108,21 +108,19 @@ export default function ComponentLibrarySidebar({
             draggable
             onDragStart={(e) => handleDragStart(e, component.type)}
             onClick={() => handleClick(component.type)}
-            className="group cursor-pointer p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all duration-200 bg-white"
+            className="cursor-pointer p-4 border border-gray-200 rounded-lg  bg-white"
           >
             <div className="flex items-start space-x-3">
               {/* Icon container */}
-              <div
-                className={`p-2 rounded-lg ${component.color} text-white group-hover:scale-105 transition-transform`}
-              >
+              <div className={`p-2 rounded-lg ${component.color} text-white  `}>
                 {component.icon}
               </div>
               {/* Text info */}
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-gray-900 group-hover:text-gray-700 transition-colors">
+                <h3 className="text-sm font-medium text-gray-900 ">
                   {component.name}
                 </h3>
-                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                <p className="text-xs text-gray-500 mt-1 ">
                   {component.description}
                 </p>
               </div>

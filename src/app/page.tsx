@@ -250,8 +250,7 @@ export default function VisualBuilder() {
         return {
           id: `text-${timestamp}`,
           type: "text",
-          content:
-            "",
+          content: "",
           width: 6,
           position,
         };
@@ -354,7 +353,7 @@ export default function VisualBuilder() {
     setHistory([]);
     setHistoryIndex(-1);
     setShowClearModal(false);
-  } ;
+  };
 
   // Render the application header with logo, controls, and mode toggles
   const renderHeader = () => (
@@ -364,7 +363,7 @@ export default function VisualBuilder() {
           {/* Logo and Title */}
           <div className="flex items-center space-x-3">
             <div>
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              <h1 className="text-xl font-bold text-slate-900">
                 Retool UI Builder
               </h1>
               <p className="text-sm text-slate-500 font-medium">
@@ -410,7 +409,7 @@ export default function VisualBuilder() {
               <div className="hidden sm:flex items-center space-x-2">
                 <button
                   onClick={() => setShowClearModal(true)}
-                  className="px-3 py-1.5 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg"
                 >
                   Clear Data
                 </button>
@@ -501,7 +500,7 @@ export default function VisualBuilder() {
         title="Clear All Components"
         message="Are you sure you want to clear all components? This action cannot be undone and will remove all your work."
         onConfirm={clearComponents}
-        onCancel={()=>setShowClearModal(false)}
+        onCancel={() => setShowClearModal(false)}
       />
     </div>
   );
