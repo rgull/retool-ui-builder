@@ -8,6 +8,8 @@ interface ImageComponentProps {
   onUpdateResize: (updatedComponent: any) => void; // Called during resize (live updates)
   onDelete: (id: string) => void; // Delete component by ID
   isEditing: boolean; // Flag to toggle between edit and preview mode
+  onSelect: (component: any) => void; // Select component for properties panel
+  isSelected: boolean; // Whether this component is currently selected
 }
 //Image Url regex
 const IMAGE_URL_REGEX = /^https?:\/\/[^\s]+$/i;
@@ -18,9 +20,14 @@ export default function ImageComponent({
   onUpdateResize,
   onDelete,
   isEditing,
+  onSelect,
+  isSelected,
 }: ImageComponentProps) {
   const [isMobile, setIsMobile] = useState(false); // Tracks mobile mode (preview only)
   const [error, setError] = useState("");
+
+  // Debug: Log component content changes
+  console.log(`ImageComponent ${component.id} content:`, component.content);
 
   // Update component with new image URL
   const handleUrlChange = (url: string) => {
@@ -130,9 +137,12 @@ export default function ImageComponent({
     <div
       className={`relative transition-all duration-200 bg-white ${
         isEditing
-          ? "border-2 border-dashed border-slate-300 hover:border-slate-400 md:cursor-move"
+          ? isSelected
+            ? "border-2 border-solid border-blue-500 bg-blue-50"
+            : "border-2 border-dashed border-slate-300 hover:border-slate-400 md:cursor-pointer"
           : "border-0"
       }`}
+      onClick={() => isEditing && onSelect(component)}
       style={{
         gridColumn: isMobile
           ? "span 12" // Full width on mobile
@@ -203,51 +213,27 @@ export default function ImageComponent({
         </div>
       )}
 
-      {/*  Main content (edit vs preview) */}
+      {/* Main content (preview only - editing moved to properties panel) */}
       <div className="w-full h-full">
-        {isEditing ? (
-          // Edit mode  input for image URL
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1 tracking-tight">
-                Image URL
-              </label>
-              <input
-                type="url"
-                value={component.content}
-                onChange={(e) => handleChange(e.target.value)}
-                className={`w-full p-3 text-black border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
-                  error
-                    ? "border-red-500 focus:ring-red-500 focus:border-red-500"
-                    : "border-slate-200 focus:ring-blue-500 focus:border-blue-500"
-                }`}
-                placeholder="https://placehold.co/600x400/orange/white"
-              />
-              {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+        <div className="w-full h-full flex items-center justify-center">
+          {component.content ? (
+            <img
+              src={component.content}
+              alt={"invalid image"}
+              className="w-full h-auto max-h-96 object-cover rounded-lg shadow-sm"
+              onError={(e) => {
+                // Show placeholder if image fails to load
+                e.currentTarget.src =
+                  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YWFhYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBmb3VuZDwvdGV4dD48L3N2Zz4=";
+              }}
+            />
+          ) : (
+            <div className="text-gray-400 text-center bg-white p-4 rounded-lg shadow-sm">
+              <div className="text-4xl mb-2">🖼️</div>
+              <div>No image URL provided</div>
             </div>
-          </div>
-        ) : (
-          // Preview mode  show image or fallback
-          <div className="w-full h-full flex items-center justify-center">
-            {component.content ? (
-              <img
-                src={component.content}
-                alt={"invalid image"}
-                className="w-full h-auto max-h-96 object-cover rounded-lg shadow-sm"
-                onError={(e) => {
-                  // Show placeholder if image fails to load
-                  e.currentTarget.src =
-                    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YWFhYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBmb3VuZDwvdGV4dD48L3N2Zz4=";
-                }}
-              />
-            ) : (
-              <div className="text-gray-400 text-center bg-white p-4 rounded-lg shadow-sm">
-                <div className="text-4xl mb-2">🖼️</div>
-                <div>No image URL provided</div>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
